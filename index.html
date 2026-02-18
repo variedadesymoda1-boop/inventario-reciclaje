@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Inventario de Reciclaje Electrónico</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+    <style>
+        body { font-family: sans-serif; padding: 20px; background-color: #f4f4f9; }
+        .container { max-width: 600px; margin: auto; background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
+        
+        /* Estilo del Formulario */
+        .form-group { margin-bottom: 15px; }
+        label { display: block; margin-bottom: 5px; font-weight: bold; }
+        select, input { width: 100%; padding: 8px; border: 1px solid #ccc; border-radius: 4px; }
+        button { background: #28a745; color: white; border: none; padding: 10px 15px; cursor: pointer; width: 100%; border-radius: 4px; }
+        button:hover { background: #218838; }
+
+        /* Estilo de la Etiqueta para Impresión */
+        #etiqueta-area { 
+            margin-top: 30px; 
+            padding: 20px; 
+            border: 2px dashed #000; 
+            display: none; 
+            text-align: center;
+            width: fit-content;
+            margin-left: auto;
+            margin-right: auto;
+        }
+        #qrcode { margin: 10px auto; }
+
+        @media print {
+            body * { visibility: hidden; }
+            #etiqueta-area, #etiqueta-area * { visibility: visible; }
+            #etiqueta-area { position: absolute; left: 0; top: 0; border: none; }
+            .no-print { display: none; }
+        }
+    </style>
+</head>
+<body>
+
+<div class="container no-print">
+    <h2>♻️ Registro de Componentes</h2>
+    
+    <div class="form-group">
+        <label>Categoría:</label>
+        <select id="categoria">
+            <option value="Resistencia">Resistencia</option>
+            <option value="Capacitor">Capacitor</option>
+            <option value="Cobre">Cobre / Cables</option>
+            <option value="Hierro">Hierro / Metal</option>
+            <option value="Plastico">Plástico</option>
+        </select>
+    </div>
+
+    <div class="form-group">
+        <label>Descripción / Valor:</label>
+        <input type="text" id="detalle" placeholder="Ej: 10k Ohm o 200g de cable">
+    </div>
+
+    <button onclick="generarEtiqueta()">Generar Etiqueta y QR</button>
+</div>
+
+<div id="etiqueta-area">
+    <h3 id="display-titulo"></h3>
+    <p id="display-detalle"></p>
+    <div id="qrcode"></div>
+    <button class="no-print" onclick="window.print()">🖨️ Imprimir Etiqueta</button>
+</div>
+
+<script>
+    function generarEtiqueta() {
+        const cat = document.getElementById('categoria').value;
+        const det = document.getElementById('detalle').value;
+        
+        if(!det) { alert("Por favor escribe un detalle"); return; }
+
+        // Mostrar el área de la etiqueta
+        document.getElementById('etiqueta-area').style.display = 'block';
+        document.getElementById('display-titulo').innerText = cat;
+        document.getElementById('display-detalle').innerText = det;
+
+        // Limpiar QR anterior y generar uno nuevo
+        document.getElementById('qrcode').innerHTML = "";
+        
+        // El QR contendrá el texto para que al escanearlo sepa qué hay dentro
+        const contenidoQR = `Categoría: ${cat} | Detalle: ${det}`;
+        new QRCode(document.getElementById("qrcode"), {
+            text: contenidoQR,
+            width: 128,
+            height: 128
+        });
+    }
+</script>
+
+</body>
+</html>
