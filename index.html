@@ -1,24 +1,32 @@
-<!DOCTYPE html>
+        <!DOCTYPE html>
 <html lang="es">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Inventario por Serie - Evelyn</title>
+    <title>Inventario Pro - Evelyn</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
     <style>
         body { font-family: 'Segoe UI', Tahoma, sans-serif; background-color: #f0f2f5; padding: 10px; color: #333; }
         .container { max-width: 900px; margin: auto; display: flex; flex-wrap: wrap; gap: 20px; }
-        .form-caja { background: white; padding: 20px; border-radius: 12px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); width: 100%; max-width: 350px; }
+        .form-caja { background: white; padding: 20px; border-radius: 12px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); width: 100%; max-width: 380px; }
         input, textarea { width: 90%; padding: 10px; margin: 8px 0; border: 1px solid #ddd; border-radius: 6px; font-size: 16px; }
         .btn-save { background: #1a73e8; color: white; border: none; padding: 12px; width: 100%; border-radius: 6px; font-weight: bold; cursor: pointer; }
-        .tabla-caja { background: white; padding: 20px; border-radius: 12px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); flex: 1; min-width: 300px; }
+        .tabla-caja { background: white; padding: 20px; border-radius: 12px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); flex: 1; min-width: 320px; }
         table { width: 100%; border-collapse: collapse; margin-top: 10px; }
         th, td { padding: 10px; border-bottom: 1px solid #eee; text-align: center; }
-        th { background: #202124; color: white; border-radius: 4px; }
-        .serie-badge { background: #e8f0fe; color: #1a73e8; padding: 4px 8px; border-radius: 4px; font-family: monospace; font-weight: bold; }
-        .btn-edit { background: #fbbc04; border: none; padding: 5px 10px; border-radius: 4px; cursor: pointer; margin-right: 5px; }
-        .btn-del { background: #ea4335; color: white; border: none; padding: 5px 10px; border-radius: 4px; cursor: pointer; }
-        .etiqueta-final { display: none; margin-top: 20px; padding: 15px; border: 2px solid #000; background: white; text-align: center; }
-        @media print { body * { visibility: hidden; } .etiqueta-final, .etiqueta-final * { visibility: visible; } .etiqueta-final { position: absolute; left: 0; top: 0; width: 100%; border: none; } }
+        th { background: #202124; color: white; }
+        
+        /* Diseño de la Etiqueta */
+        .etiqueta-viva { display: none; margin-top: 20px; border: 2px solid #000; background: white; padding: 15px; text-align: center; width: 300px; margin-left: auto; margin-right: auto; }
+        .serie-grande { font-size: 35px; font-weight: bold; margin: 5px 0; letter-spacing: 2px; }
+        .desc-etiqueta { font-size: 13px; color: #555; border-top: 1px solid #ccc; padding-top: 5px; margin-top: 5px; }
+        
+        .no-print { display: flex; gap: 10px; justify-content: center; margin-top: 10px; }
+        .btn-accion { padding: 8px 12px; border: none; border-radius: 4px; cursor: pointer; font-weight: bold; color: white; }
+        .btn-edit { background: #fbbc04; color: #000; }
+        .btn-del { background: #ea4335; }
+
+        @media print { body * { visibility: hidden; } .etiqueta-viva, .etiqueta-viva * { visibility: visible; } .etiqueta-viva { position: absolute; left: 0; top: 0; border: none; } .no-print { display: none; } }
     </style>
 </head>
 <body>
@@ -29,21 +37,28 @@
         <div class="form-caja">
             <h3 id="titulo-form">Nuevo Componente</h3>
             <input type="hidden" id="edit-id" value="-1">
-            <label>Nombre del Componente:</label>
-            <input type="text" id="nombre" placeholder="Ej: Resistor SMD 0805">
+            <label>Nombre:</label>
+            <input type="text" id="nombre" placeholder="Ej: Resistor SMD">
             <label>Valor:</label>
             <input type="text" id="valor" placeholder="Ej: 10k Ohm">
-            <label>Cantidad en Stock:</label>
+            <label>Cantidad:</label>
             <input type="number" id="cantidad" placeholder="0">
-            <label>Descripción / Ubicación:</label>
-            <textarea id="desc" rows="2" placeholder="Ej: Cajón A-1"></textarea>
+            <label>Descripción / Notas:</label>
+            <textarea id="desc" rows="3" placeholder="Ej: Montaje superficial, cajón 1..."></textarea>
             <button class="btn-save" onclick="procesarDatos()">GUARDAR EN INVENTARIO</button>
 
-            <div id="print-area" class="etiqueta-final">
-                <p style="font-size: 12px; margin: 0;">SERIE DE ALMACENAMIENTO</p>
-                <h2 id="serie-txt" style="margin: 5px 0; font-size: 30px; letter-spacing: 2px;"></h2>
-                <p id="detalles-txt" style="margin: 0; border-top: 1px solid #000; padding-top: 5px;"></p>
-                <button onclick="window.print()" style="margin-top: 10px; cursor: pointer;">Imprimir Etiqueta</button>
+            <div id="area-descarga">
+                <div id="etiqueta-final" class="etiqueta-viva">
+                    <p style="font-size: 10px; margin: 0; color: #666;">SERIE DE ALMACENAMIENTO</p>
+                    <div id="serie-txt" class="serie-grande"></div>
+                    <div id="detalles-txt" style="font-weight: bold; font-size: 16px;"></div>
+                    <div id="desc-txt" class="desc-etiqueta"></div>
+                </div>
+            </div>
+            
+            <div id="botones-etiqueta" class="no-print" style="display:none;">
+                <button onclick="window.print()" class="btn-accion" style="background:#3498db;">IMPRIMIR</button>
+                <button onclick="descargarEtiqueta()" class="btn-accion" style="background:#e67e22;">DESCARGAR</button>
             </div>
         </div>
 
@@ -64,8 +79,7 @@
     </div>
 
     <script>
-        // Cargar datos guardados al iniciar
-        var stock = JSON.parse(localStorage.getItem('inventario_smd_v6') || '[]');
+        var stock = JSON.parse(localStorage.getItem('inventario_smd_v7') || '[]');
         actualizarTabla();
 
         function procesarDatos() {
@@ -75,26 +89,45 @@
             var des = document.getElementById('desc').value;
             var id = document.getElementById('edit-id').value;
 
-            if(!nom || !val || !can) { alert("Completa Nombre, Valor y Cantidad"); return; }
+            if(!nom || !val) { alert("Llena al menos Nombre y Valor"); return; }
 
+            var itemData;
             if(id === "-1") {
-                // Generar serie nueva basada en el tiempo para que sea única
                 var serie = "SN-" + Math.floor(1000 + Math.random() * 9000);
-                stock.push({ serie: serie, nombre: nom, valor: val, cantidad: can, desc: des });
+                itemData = { serie: serie, nombre: nom, valor: val, cantidad: can, desc: des };
+                stock.push(itemData);
             } else {
-                // Editar existente
                 stock[id].nombre = nom;
                 stock[id].valor = val;
                 stock[id].cantidad = can;
                 stock[id].desc = des;
+                itemData = stock[id];
                 document.getElementById('edit-id').value = "-1";
                 document.getElementById('titulo-form').innerText = "Nuevo Componente";
             }
 
-            localStorage.setItem('inventario_smd_v6', JSON.stringify(stock));
+            localStorage.setItem('inventario_smd_v7', JSON.stringify(stock));
             actualizarTabla();
-            mostrarEtiqueta(stock[stock.length - 1]);
+            mostrarEtiqueta(itemData);
             limpiar();
+        }
+
+        function mostrarEtiqueta(item) {
+            document.getElementById('etiqueta-final').style.display = 'block';
+            document.getElementById('botones-etiqueta').style.display = 'flex';
+            document.getElementById('serie-txt').innerText = item.serie;
+            document.getElementById('detalles-txt').innerText = item.nombre + " | " + item.valor;
+            document.getElementById('desc-txt').innerText = item.desc || "Sin descripción";
+        }
+
+        function descargarEtiqueta() {
+            const etiqueta = document.getElementById('etiqueta-final');
+            html2canvas(etiqueta).then(canvas => {
+                const link = document.createElement('a');
+                link.download = 'etiqueta-' + document.getElementById('serie-txt').innerText + '.png';
+                link.href = canvas.toDataURL();
+                link.click();
+            });
         }
 
         function actualizarTabla() {
@@ -102,20 +135,14 @@
             tabla.innerHTML = "";
             stock.forEach(function(item, i) {
                 tabla.innerHTML += "<tr>" +
-                    "<td><span class='serie-badge'>" + item.serie + "</span></td>" +
+                    "<td><b style='color:#1a73e8'>" + item.serie + "</b></td>" +
                     "<td>" + item.nombre + " (" + item.valor + ")</td>" +
-                    "<td><b>" + item.cantidad + "</b></td>" +
+                    "<td>" + item.cantidad + "</td>" +
                     "<td>" +
-                        "<button class='btn-edit' onclick='cargarEdit("+i+")'>📝</button>" +
-                        "<button class='btn-del' onclick='eliminar("+i+")'>🗑️</button>" +
+                        "<button class='btn-accion btn-edit' onclick='cargarEdit("+i+")'>📝</button>" +
+                        "<button class='btn-accion btn-del' onclick='eliminar("+i+")'>🗑️</button>" +
                     "</td></tr>";
             });
-        }
-
-        function mostrarEtiqueta(item) {
-            document.getElementById('print-area').style.display = 'block';
-            document.getElementById('serie-txt').innerText = item.serie;
-            document.getElementById('detalles-txt').innerText = item.nombre + " | " + item.valor;
         }
 
         function cargarEdit(i) {
@@ -125,14 +152,14 @@
             document.getElementById('cantidad').value = item.cantidad;
             document.getElementById('desc').value = item.desc;
             document.getElementById('edit-id').value = i;
-            document.getElementById('titulo-form').innerText = "Editando Serie: " + item.serie;
+            document.getElementById('titulo-form').innerText = "Editando: " + item.serie;
             window.scrollTo(0,0);
         }
 
         function eliminar(i) {
-            if(confirm("¿Seguro que quieres borrar este componente?")) {
+            if(confirm("¿Borrar este componente?")) {
                 stock.splice(i, 1);
-                localStorage.setItem('inventario_smd_v6', JSON.stringify(stock));
+                localStorage.setItem('inventario_smd_v7', JSON.stringify(stock));
                 actualizarTabla();
             }
         }
@@ -146,4 +173,4 @@
     </script>
 </body>
 </html>
-            
+    
