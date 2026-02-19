@@ -1,9 +1,9 @@
-<!DOCTYPE html>
+    <!DOCTYPE html>
 <html lang="es">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Inventario Cloud - Evelyn</title>
+    <title>Inventario Cloud Pro - Evelyn</title>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
@@ -19,7 +19,7 @@
         table { width: 100%; border-collapse: collapse; background: white; margin-top: 20px; border-radius: 10px; overflow: hidden; }
         th, td { padding: 12px; border-bottom: 1px solid #eee; text-align: center; }
         th { background: #202124; color: white; }
-        .no-print { display: flex; gap: 10px; justify-content: center; margin-top: 10px; }
+        .btn-accion { padding: 6px; border-radius: 4px; color: white; margin: 2px; }
     </style>
 </head>
 <body>
@@ -34,18 +34,19 @@
     <div id="app">
         <h1>📦 Mi Inventario en la Nube</h1>
         <div class="caja">
-            <input type="text" id="nom" placeholder="Componente (Ej: Resistor SMD)">
+            <h3 id="titulo-form">Nuevo Componente</h3>
+            <input type="hidden" id="edit-id" value=""> <input type="text" id="nom" placeholder="Componente (Ej: Resistor SMD)">
             <input type="text" id="val" placeholder="Valor (Ej: 10k)">
             <input type="number" id="cant" placeholder="Cantidad">
             <textarea id="desc" placeholder="Descripción / Ubicación"></textarea>
-            <button onclick="guardar()" class="btn-blue">GUARDAR EN LA NUBE</button>
+            <button onclick="guardar()" id="btn-main" class="btn-blue">GUARDAR EN LA NUBE</button>
             
             <div id="etiqueta-viva" class="etiqueta-viva" style="display:none;">
                 <p style="font-size: 10px; margin: 0; color: #666;">SERIE DE ALMACENAMIENTO</p>
                 <h2 id="s-txt" style="font-size: 30px; margin: 5px 0;"></h2>
                 <p id="n-txt" style="font-weight: bold; margin: 0;"></p>
-                <p id="d-txt" style="font-size: 12px; border-top: 1px solid #eee; margin-top: 5px; padding-top: 5px;"></p>
-                <div class="no-print">
+                <p id="d-txt" style="font-size: 11px; border-top: 1px solid #eee; margin-top: 5px; padding-top: 5px; color: #444;"></p>
+                <div style="margin-top: 10px;">
                     <button onclick="window.print()" style="background:#3498db; color:white; padding:8px; border-radius:5px;">Imprimir</button>
                     <button onclick="descargar()" style="background:#e67e22; color:white; padding:8px; border-radius:5px;">Descargar</button>
                 </div>
@@ -59,7 +60,6 @@
     </div>
 
     <script>
-        // Configuración de Firebase con tus datos reales
         const firebaseConfig = {
             apiKey: "AIzaSyD9RqIB2tO3Tk1RmyDjA95CS8k1cOAYWqQ",
             authDomain: "inventario-f32ad.firebaseapp.com",
@@ -73,7 +73,6 @@
         const db = firebase.firestore();
 
         function acceder() {
-            // Tu clave es 123
             if(document.getElementById('pass').value === "123") {
                 document.getElementById('login').style.display = 'none';
                 document.getElementById('app').style.display = 'block';
@@ -82,26 +81,35 @@
         }
 
         function guardar() {
-            const nom = document.getElementById('nom').value;
-            const val = document.getElementById('val').value;
-            const can = document.getElementById('cant').value;
-            const des = document.getElementById('desc').value;
-
-            if(!nom || !val) return alert("Llena Nombre y Valor");
-
+            const idDoc = document.getElementById('edit-id').value;
             const item = {
-                serie: "SN-" + Math.floor(1000 + Math.random() * 9000),
-                nombre: nom,
-                valor: val,
-                cant: can || 0,
-                desc: des || "Sin descripción",
+                nombre: document.getElementById('nom').value,
+                valor: document.getElementById('val').value,
+                cant: document.getElementById('cant').value || 0,
+                desc: document.getElementById('desc').value || "Sin descripción",
                 fecha: new Date()
             };
 
-            db.collection("stock").add(item).then(() => {
-                verEtiqueta(item);
-                limpiar();
-            }).catch(err => alert("Revisa las REGLAS en Firebase: " + err));
+            if(!item.nombre || !item.valor) return alert("Llena Nombre y Valor");
+
+            if(idDoc === "") {
+                // Crear nuevo
+                item.serie = "SN-" + Math.floor(1000 + Math.random() * 9000);
+                db.collection("stock").add(item).then(() => {
+                    verEtiqueta(item);
+                    limpiar();
+                });
+            } else {
+                // Actualizar existente
+                db.collection("stock").doc(idDoc).update(item).then(() => {
+                    alert("¡Actualizado!");
+                    document.getElementById('edit-id').value = "";
+                    document.getElementById('btn-main').innerText = "GUARDAR EN LA NUBE";
+                    document.getElementById('btn-main').style.background = "#1a73e8";
+                    document.getElementById('titulo-form').innerText = "Nuevo Componente";
+                    limpiar();
+                });
+            }
         }
 
         function cargarDatos() {
@@ -114,10 +122,26 @@
                         <td><b>${d.serie}</b></td>
                         <td>${d.nombre} (${d.valor})</td>
                         <td>${d.cant}</td>
-                        <td><button onclick="eliminar('${doc.id}')" style="background:#ea4335; color:white; padding:6px; border-radius:4px;">🗑️</button></td>
+                        <td>
+                            <button onclick="cargarParaEditar('${doc.id}', '${d.nombre}', '${d.valor}', '${d.cant}', '${d.desc}')" style="background:#fbbc04;" class="btn-accion">📝</button>
+                            <button onclick="eliminar('${doc.id}')" style="background:#ea4335;" class="btn-accion">🗑️</button>
+                        </td>
                     </tr>`;
                 });
             });
+        }
+
+        function cargarParaEditar(id, n, v, c, d) {
+            document.getElementById('edit-id').value = id;
+            document.getElementById('nom').value = n;
+            document.getElementById('valor' === 'valor' ? 'val' : '').value = v; 
+            document.getElementById('val').value = v;
+            document.getElementById('cant').value = c;
+            document.getElementById('desc').value = d;
+            document.getElementById('btn-main').innerText = "ACTUALIZAR DATOS";
+            document.getElementById('btn-main').style.background = "#f1c40f";
+            document.getElementById('titulo-form').innerText = "Editando Componente";
+            window.scrollTo(0,0);
         }
 
         function verEtiqueta(i) {
@@ -130,7 +154,7 @@
         function descargar() {
             html2canvas(document.getElementById('etiqueta-viva')).then(canvas => {
                 const a = document.createElement('a');
-                a.download = 'etiqueta-' + document.getElementById('s-txt').innerText + '.png';
+                a.download = 'etiqueta.png';
                 a.href = canvas.toDataURL();
                 a.click();
             });
@@ -149,3 +173,4 @@
     </script>
 </body>
 </html>
+            
