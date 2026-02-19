@@ -1,176 +1,151 @@
-        <!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="es">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Inventario Pro - Evelyn</title>
+    <title>Inventario Cloud - Evelyn</title>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
     <style>
-        body { font-family: 'Segoe UI', Tahoma, sans-serif; background-color: #f0f2f5; padding: 10px; color: #333; }
-        .container { max-width: 900px; margin: auto; display: flex; flex-wrap: wrap; gap: 20px; }
-        .form-caja { background: white; padding: 20px; border-radius: 12px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); width: 100%; max-width: 380px; }
-        input, textarea { width: 90%; padding: 10px; margin: 8px 0; border: 1px solid #ddd; border-radius: 6px; font-size: 16px; }
-        .btn-save { background: #1a73e8; color: white; border: none; padding: 12px; width: 100%; border-radius: 6px; font-weight: bold; cursor: pointer; }
-        .tabla-caja { background: white; padding: 20px; border-radius: 12px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); flex: 1; min-width: 320px; }
-        table { width: 100%; border-collapse: collapse; margin-top: 10px; }
-        th, td { padding: 10px; border-bottom: 1px solid #eee; text-align: center; }
+        body { font-family: 'Segoe UI', sans-serif; background: #f0f2f5; text-align: center; padding: 10px; }
+        #login { background: white; padding: 30px; border-radius: 15px; max-width: 300px; margin: 80px auto; box-shadow: 0 4px 10px rgba(0,0,0,0.1); }
+        #app { display: none; }
+        .caja { background: white; padding: 20px; border-radius: 12px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); max-width: 450px; margin: auto; }
+        input, textarea { width: 95%; padding: 10px; margin: 8px 0; border: 1px solid #ddd; border-radius: 8px; font-size: 16px; }
+        button { cursor: pointer; border-radius: 8px; font-weight: bold; border: none; transition: 0.3s; }
+        .btn-blue { background: #1a73e8; color: white; padding: 12px; width: 100%; }
+        .etiqueta-viva { border: 2px solid #000; background: white; padding: 15px; width: 280px; margin: 20px auto; text-align: center; }
+        table { width: 100%; border-collapse: collapse; background: white; margin-top: 20px; border-radius: 10px; overflow: hidden; }
+        th, td { padding: 12px; border-bottom: 1px solid #eee; text-align: center; }
         th { background: #202124; color: white; }
-        
-        /* Diseño de la Etiqueta */
-        .etiqueta-viva { display: none; margin-top: 20px; border: 2px solid #000; background: white; padding: 15px; text-align: center; width: 300px; margin-left: auto; margin-right: auto; }
-        .serie-grande { font-size: 35px; font-weight: bold; margin: 5px 0; letter-spacing: 2px; }
-        .desc-etiqueta { font-size: 13px; color: #555; border-top: 1px solid #ccc; padding-top: 5px; margin-top: 5px; }
-        
         .no-print { display: flex; gap: 10px; justify-content: center; margin-top: 10px; }
-        .btn-accion { padding: 8px 12px; border: none; border-radius: 4px; cursor: pointer; font-weight: bold; color: white; }
-        .btn-edit { background: #fbbc04; color: #000; }
-        .btn-del { background: #ea4335; }
-
-        @media print { body * { visibility: hidden; } .etiqueta-viva, .etiqueta-viva * { visibility: visible; } .etiqueta-viva { position: absolute; left: 0; top: 0; border: none; } .no-print { display: none; } }
     </style>
 </head>
 <body>
 
-    <h1>📦 Control de Inventario por Serie</h1>
+    <div id="login">
+        <h2>🔒 Acceso Inventario</h2>
+        <input type="password" id="pass" maxlength="3" placeholder="000" style="text-align: center; font-size: 24px; width: 100px;">
+        <br><br>
+        <button onclick="acceder()" style="width:100%; padding:12px; background:#202124; color:white;">ENTRAR</button>
+    </div>
 
-    <div class="container">
-        <div class="form-caja">
-            <h3 id="titulo-form">Nuevo Componente</h3>
-            <input type="hidden" id="edit-id" value="-1">
-            <label>Nombre:</label>
-            <input type="text" id="nombre" placeholder="Ej: Resistor SMD">
-            <label>Valor:</label>
-            <input type="text" id="valor" placeholder="Ej: 10k Ohm">
-            <label>Cantidad:</label>
-            <input type="number" id="cantidad" placeholder="0">
-            <label>Descripción / Notas:</label>
-            <textarea id="desc" rows="3" placeholder="Ej: Montaje superficial, cajón 1..."></textarea>
-            <button class="btn-save" onclick="procesarDatos()">GUARDAR EN INVENTARIO</button>
-
-            <div id="area-descarga">
-                <div id="etiqueta-final" class="etiqueta-viva">
-                    <p style="font-size: 10px; margin: 0; color: #666;">SERIE DE ALMACENAMIENTO</p>
-                    <div id="serie-txt" class="serie-grande"></div>
-                    <div id="detalles-txt" style="font-weight: bold; font-size: 16px;"></div>
-                    <div id="desc-txt" class="desc-etiqueta"></div>
+    <div id="app">
+        <h1>📦 Mi Inventario en la Nube</h1>
+        <div class="caja">
+            <input type="text" id="nom" placeholder="Componente (Ej: Resistor SMD)">
+            <input type="text" id="val" placeholder="Valor (Ej: 10k)">
+            <input type="number" id="cant" placeholder="Cantidad">
+            <textarea id="desc" placeholder="Descripción / Ubicación"></textarea>
+            <button onclick="guardar()" class="btn-blue">GUARDAR EN LA NUBE</button>
+            
+            <div id="etiqueta-viva" class="etiqueta-viva" style="display:none;">
+                <p style="font-size: 10px; margin: 0; color: #666;">SERIE DE ALMACENAMIENTO</p>
+                <h2 id="s-txt" style="font-size: 30px; margin: 5px 0;"></h2>
+                <p id="n-txt" style="font-weight: bold; margin: 0;"></p>
+                <p id="d-txt" style="font-size: 12px; border-top: 1px solid #eee; margin-top: 5px; padding-top: 5px;"></p>
+                <div class="no-print">
+                    <button onclick="window.print()" style="background:#3498db; color:white; padding:8px; border-radius:5px;">Imprimir</button>
+                    <button onclick="descargar()" style="background:#e67e22; color:white; padding:8px; border-radius:5px;">Descargar</button>
                 </div>
             </div>
-            
-            <div id="botones-etiqueta" class="no-print" style="display:none;">
-                <button onclick="window.print()" class="btn-accion" style="background:#3498db;">IMPRIMIR</button>
-                <button onclick="descargarEtiqueta()" class="btn-accion" style="background:#e67e22;">DESCARGAR</button>
-            </div>
         </div>
 
-        <div class="tabla-caja">
-            <h3>Inventario Guardado</h3>
-            <table>
-                <thead>
-                    <tr>
-                        <th>Serie</th>
-                        <th>Componente</th>
-                        <th>Cant.</th>
-                        <th>Acción</th>
-                    </tr>
-                </thead>
-                <tbody id="cuerpo-tabla"></tbody>
-            </table>
-        </div>
+        <table>
+            <thead><tr><th>Serie</th><th>Nombre</th><th>Cant.</th><th>Acción</th></tr></thead>
+            <tbody id="lista"></tbody>
+        </table>
     </div>
 
     <script>
-        var stock = JSON.parse(localStorage.getItem('inventario_smd_v7') || '[]');
-        actualizarTabla();
+        // Configuración de Firebase con tus datos reales
+        const firebaseConfig = {
+            apiKey: "AIzaSyD9RqIB2tO3Tk1RmyDjA95CS8k1cOAYWqQ",
+            authDomain: "inventario-f32ad.firebaseapp.com",
+            projectId: "inventario-f32ad",
+            storageBucket: "inventario-f32ad.firebasestorage.app",
+            messagingSenderId: "36239705970",
+            appId: "1:36239705970:web:7f0faf5d3d49291bf17feb"
+        };
 
-        function procesarDatos() {
-            var nom = document.getElementById('nombre').value;
-            var val = document.getElementById('valor').value;
-            var can = document.getElementById('cantidad').value;
-            var des = document.getElementById('desc').value;
-            var id = document.getElementById('edit-id').value;
+        firebase.initializeApp(firebaseConfig);
+        const db = firebase.firestore();
 
-            if(!nom || !val) { alert("Llena al menos Nombre y Valor"); return; }
-
-            var itemData;
-            if(id === "-1") {
-                var serie = "SN-" + Math.floor(1000 + Math.random() * 9000);
-                itemData = { serie: serie, nombre: nom, valor: val, cantidad: can, desc: des };
-                stock.push(itemData);
-            } else {
-                stock[id].nombre = nom;
-                stock[id].valor = val;
-                stock[id].cantidad = can;
-                stock[id].desc = des;
-                itemData = stock[id];
-                document.getElementById('edit-id').value = "-1";
-                document.getElementById('titulo-form').innerText = "Nuevo Componente";
-            }
-
-            localStorage.setItem('inventario_smd_v7', JSON.stringify(stock));
-            actualizarTabla();
-            mostrarEtiqueta(itemData);
-            limpiar();
+        function acceder() {
+            // Tu clave es 123
+            if(document.getElementById('pass').value === "123") {
+                document.getElementById('login').style.display = 'none';
+                document.getElementById('app').style.display = 'block';
+                cargarDatos();
+            } else { alert("Clave incorrecta"); }
         }
 
-        function mostrarEtiqueta(item) {
-            document.getElementById('etiqueta-final').style.display = 'block';
-            document.getElementById('botones-etiqueta').style.display = 'flex';
-            document.getElementById('serie-txt').innerText = item.serie;
-            document.getElementById('detalles-txt').innerText = item.nombre + " | " + item.valor;
-            document.getElementById('desc-txt').innerText = item.desc || "Sin descripción";
+        function guardar() {
+            const nom = document.getElementById('nom').value;
+            const val = document.getElementById('val').value;
+            const can = document.getElementById('cant').value;
+            const des = document.getElementById('desc').value;
+
+            if(!nom || !val) return alert("Llena Nombre y Valor");
+
+            const item = {
+                serie: "SN-" + Math.floor(1000 + Math.random() * 9000),
+                nombre: nom,
+                valor: val,
+                cant: can || 0,
+                desc: des || "Sin descripción",
+                fecha: new Date()
+            };
+
+            db.collection("stock").add(item).then(() => {
+                verEtiqueta(item);
+                limpiar();
+            }).catch(err => alert("Revisa las REGLAS en Firebase: " + err));
         }
 
-        function descargarEtiqueta() {
-            const etiqueta = document.getElementById('etiqueta-final');
-            html2canvas(etiqueta).then(canvas => {
-                const link = document.createElement('a');
-                link.download = 'etiqueta-' + document.getElementById('serie-txt').innerText + '.png';
-                link.href = canvas.toDataURL();
-                link.click();
+        function cargarDatos() {
+            db.collection("stock").orderBy("fecha", "desc").onSnapshot((snapshot) => {
+                const list = document.getElementById('lista');
+                list.innerHTML = "";
+                snapshot.forEach((doc) => {
+                    const d = doc.data();
+                    list.innerHTML += `<tr>
+                        <td><b>${d.serie}</b></td>
+                        <td>${d.nombre} (${d.valor})</td>
+                        <td>${d.cant}</td>
+                        <td><button onclick="eliminar('${doc.id}')" style="background:#ea4335; color:white; padding:6px; border-radius:4px;">🗑️</button></td>
+                    </tr>`;
+                });
             });
         }
 
-        function actualizarTabla() {
-            var tabla = document.getElementById('cuerpo-tabla');
-            tabla.innerHTML = "";
-            stock.forEach(function(item, i) {
-                tabla.innerHTML += "<tr>" +
-                    "<td><b style='color:#1a73e8'>" + item.serie + "</b></td>" +
-                    "<td>" + item.nombre + " (" + item.valor + ")</td>" +
-                    "<td>" + item.cantidad + "</td>" +
-                    "<td>" +
-                        "<button class='btn-accion btn-edit' onclick='cargarEdit("+i+")'>📝</button>" +
-                        "<button class='btn-accion btn-del' onclick='eliminar("+i+")'>🗑️</button>" +
-                    "</td></tr>";
+        function verEtiqueta(i) {
+            document.getElementById('etiqueta-viva').style.display = 'block';
+            document.getElementById('s-txt').innerText = i.serie;
+            document.getElementById('n-txt').innerText = i.nombre + " " + i.valor;
+            document.getElementById('d-txt').innerText = i.desc;
+        }
+
+        function descargar() {
+            html2canvas(document.getElementById('etiqueta-viva')).then(canvas => {
+                const a = document.createElement('a');
+                a.download = 'etiqueta-' + document.getElementById('s-txt').innerText + '.png';
+                a.href = canvas.toDataURL();
+                a.click();
             });
         }
 
-        function cargarEdit(i) {
-            var item = stock[i];
-            document.getElementById('nombre').value = item.nombre;
-            document.getElementById('valor').value = item.valor;
-            document.getElementById('cantidad').value = item.cantidad;
-            document.getElementById('desc').value = item.desc;
-            document.getElementById('edit-id').value = i;
-            document.getElementById('titulo-form').innerText = "Editando: " + item.serie;
-            window.scrollTo(0,0);
-        }
-
-        function eliminar(i) {
-            if(confirm("¿Borrar este componente?")) {
-                stock.splice(i, 1);
-                localStorage.setItem('inventario_smd_v7', JSON.stringify(stock));
-                actualizarTabla();
-            }
+        function eliminar(id) {
+            if(confirm("¿Eliminar este componente?")) db.collection("stock").doc(id).delete();
         }
 
         function limpiar() {
-            document.getElementById('nombre').value = "";
-            document.getElementById('valor').value = "";
-            document.getElementById('cantidad').value = "";
+            document.getElementById('nom').value = "";
+            document.getElementById('val').value = "";
+            document.getElementById('cant').value = "";
             document.getElementById('desc').value = "";
         }
     </script>
 </body>
 </html>
-    
