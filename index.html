@@ -3,152 +3,147 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Inventario Permanente - Evelyn</title>
+    <title>Inventario por Serie - Evelyn</title>
     <style>
-        body { font-family: sans-serif; background-color: #f0f4f8; padding: 15px; text-align: center; color: #333; }
-        .contenedor { max-width: 800px; margin: auto; display: flex; flex-wrap: wrap; gap: 20px; justify-content: center; }
-        .caja { background: white; padding: 20px; border-radius: 15px; box-shadow: 0 4px 10px rgba(0,0,0,0.1); width: 100%; max-width: 350px; }
-        input, textarea { width: 90%; padding: 10px; margin: 8px 0; border: 1px solid #ccc; border-radius: 8px; font-size: 16px; }
-        .btn-principal { background: #2ecc71; color: white; border: none; padding: 15px; width: 95%; border-radius: 8px; cursor: pointer; font-weight: bold; }
-        .seccion-inventario { background: white; padding: 20px; border-radius: 15px; flex-grow: 1; min-width: 320px; box-shadow: 0 4px 10px rgba(0,0,0,0.1); }
-        table { width: 100%; border-collapse: collapse; margin-top: 15px; font-size: 14px; }
-        th, td { border-bottom: 1px solid #eee; padding: 10px; text-align: center; }
-        th { background: #34495e; color: white; }
-        #etiqueta-preview { margin-top: 20px; padding: 15px; border: 2px dashed #333; background: white; display: none; }
-        #qrcode { margin: 10px auto; display: flex; justify-content: center; min-height: 140px; }
-        .btn-edit { background: #f1c40f; color: #000; border: none; padding: 6px; border-radius: 4px; cursor: pointer; margin-right: 4px; }
-        .btn-del { background: #e74c3c; color: white; border: none; padding: 6px; border-radius: 4px; cursor: pointer; }
-        @media print { .caja, .seccion-inventario, button { display: none; } #etiqueta-preview { display: block; border: none; position: absolute; top: 0; left: 0; } }
+        body { font-family: 'Segoe UI', Tahoma, sans-serif; background-color: #f0f2f5; padding: 10px; color: #333; }
+        .container { max-width: 900px; margin: auto; display: flex; flex-wrap: wrap; gap: 20px; }
+        .form-caja { background: white; padding: 20px; border-radius: 12px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); width: 100%; max-width: 350px; }
+        input, textarea { width: 90%; padding: 10px; margin: 8px 0; border: 1px solid #ddd; border-radius: 6px; font-size: 16px; }
+        .btn-save { background: #1a73e8; color: white; border: none; padding: 12px; width: 100%; border-radius: 6px; font-weight: bold; cursor: pointer; }
+        .tabla-caja { background: white; padding: 20px; border-radius: 12px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); flex: 1; min-width: 300px; }
+        table { width: 100%; border-collapse: collapse; margin-top: 10px; }
+        th, td { padding: 10px; border-bottom: 1px solid #eee; text-align: center; }
+        th { background: #202124; color: white; border-radius: 4px; }
+        .serie-badge { background: #e8f0fe; color: #1a73e8; padding: 4px 8px; border-radius: 4px; font-family: monospace; font-weight: bold; }
+        .btn-edit { background: #fbbc04; border: none; padding: 5px 10px; border-radius: 4px; cursor: pointer; margin-right: 5px; }
+        .btn-del { background: #ea4335; color: white; border: none; padding: 5px 10px; border-radius: 4px; cursor: pointer; }
+        .etiqueta-final { display: none; margin-top: 20px; padding: 15px; border: 2px solid #000; background: white; text-align: center; }
+        @media print { body * { visibility: hidden; } .etiqueta-final, .etiqueta-final * { visibility: visible; } .etiqueta-final { position: absolute; left: 0; top: 0; width: 100%; border: none; } }
     </style>
 </head>
 <body>
 
-    <h1>🏷️ Inventario de Componentes</h1>
+    <h1>📦 Control de Inventario por Serie</h1>
 
-    <div class="contenedor">
-        <div class="caja">
-            <h3>Registrar Componente</h3>
-            <input type="hidden" id="edit-idx" value="-1">
-            <input type="text" id="comp" placeholder="Nombre (Ej: Resistor SMD)">
-            <input type="text" id="val" placeholder="Valor (Ej: 10k)">
-            <input type="number" id="cant" placeholder="Cantidad">
-            <textarea id="desc" placeholder="Descripción..."></textarea>
-            <button onclick="guardarTodo()" id="btn-main" class="btn-principal">GUARDAR E INVENTARIAR</button>
-            
-            <div id="etiqueta-preview">
-                <h2 id="p-comp" style="margin:0;"></h2>
-                <p id="p-val" style="margin:5px 0;"></p>
-                <div id="qrcode"></div>
-                <button onclick="window.print()" style="background:#3498db; color:white; border:none; padding:8px; border-radius:4px; margin-top:5px;">IMPRIMIR</button>
+    <div class="container">
+        <div class="form-caja">
+            <h3 id="titulo-form">Nuevo Componente</h3>
+            <input type="hidden" id="edit-id" value="-1">
+            <label>Nombre del Componente:</label>
+            <input type="text" id="nombre" placeholder="Ej: Resistor SMD 0805">
+            <label>Valor:</label>
+            <input type="text" id="valor" placeholder="Ej: 10k Ohm">
+            <label>Cantidad en Stock:</label>
+            <input type="number" id="cantidad" placeholder="0">
+            <label>Descripción / Ubicación:</label>
+            <textarea id="desc" rows="2" placeholder="Ej: Cajón A-1"></textarea>
+            <button class="btn-save" onclick="procesarDatos()">GUARDAR EN INVENTARIO</button>
+
+            <div id="print-area" class="etiqueta-final">
+                <p style="font-size: 12px; margin: 0;">SERIE DE ALMACENAMIENTO</p>
+                <h2 id="serie-txt" style="margin: 5px 0; font-size: 30px; letter-spacing: 2px;"></h2>
+                <p id="detalles-txt" style="margin: 0; border-top: 1px solid #000; padding-top: 5px;"></p>
+                <button onclick="window.print()" style="margin-top: 10px; cursor: pointer;">Imprimir Etiqueta</button>
             </div>
         </div>
 
-        <div class="seccion-inventario">
-            <h3>Stock Permanente</h3>
+        <div class="tabla-caja">
+            <h3>Inventario Guardado</h3>
             <table>
                 <thead>
                     <tr>
-                        <th>Nombre</th>
+                        <th>Serie</th>
+                        <th>Componente</th>
                         <th>Cant.</th>
                         <th>Acción</th>
                     </tr>
                 </thead>
-                <tbody id="lista-stock"></tbody>
+                <tbody id="cuerpo-tabla"></tbody>
             </table>
         </div>
     </div>
 
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
-
     <script>
-        // Usamos una versión nueva de la base de datos para asegurar limpieza
-        var inventario = JSON.parse(localStorage.getItem('datos_inventario_v5') || '[]');
+        // Cargar datos guardados al iniciar
+        var stock = JSON.parse(localStorage.getItem('inventario_smd_v6') || '[]');
+        actualizarTabla();
 
-        function guardarTodo() {
-            var c = document.getElementById('comp').value;
-            var v = document.getElementById('val').value;
-            var n = document.getElementById('cant').value;
-            var d = document.getElementById('desc').value;
-            var id = document.getElementById('edit-idx').value;
+        function procesarDatos() {
+            var nom = document.getElementById('nombre').value;
+            var val = document.getElementById('valor').value;
+            var can = document.getElementById('cantidad').value;
+            var des = document.getElementById('desc').value;
+            var id = document.getElementById('edit-id').value;
 
-            if(!c || !v) { alert("Llena Nombre y Valor"); return; }
-
-            var nuevoItem = { comp: c, val: v, cant: n, desc: d };
+            if(!nom || !val || !can) { alert("Completa Nombre, Valor y Cantidad"); return; }
 
             if(id === "-1") {
-                inventario.push(nuevoItem);
+                // Generar serie nueva basada en el tiempo para que sea única
+                var serie = "SN-" + Math.floor(1000 + Math.random() * 9000);
+                stock.push({ serie: serie, nombre: nom, valor: val, cantidad: can, desc: des });
             } else {
-                inventario[id] = nuevoItem;
-                document.getElementById('edit-idx').value = "-1";
-                document.getElementById('btn-main').innerText = "GUARDAR E INVENTARIAR";
-                document.getElementById('btn-main').style.background = "#2ecc71";
+                // Editar existente
+                stock[id].nombre = nom;
+                stock[id].valor = val;
+                stock[id].cantidad = can;
+                stock[id].desc = des;
+                document.getElementById('edit-id').value = "-1";
+                document.getElementById('titulo-form').innerText = "Nuevo Componente";
             }
 
-            localStorage.setItem('datos_inventario_v5', JSON.stringify(inventario));
-            dibujarTabla();
-            dibujarQR(nuevoItem);
-            
-            // Limpiar formulario
-            document.getElementById('comp').value = "";
-            document.getElementById('val').value = "";
-            document.getElementById('cant').value = "";
-            document.getElementById('desc').value = "";
+            localStorage.setItem('inventario_smd_v6', JSON.stringify(stock));
+            actualizarTabla();
+            mostrarEtiqueta(stock[stock.length - 1]);
+            limpiar();
         }
 
-        function dibujarTabla() {
-            var cuerpo = document.getElementById('lista-stock');
-            cuerpo.innerHTML = "";
-            inventario.forEach(function(item, i) {
-                cuerpo.innerHTML += "<tr><td>" + item.comp + " (" + item.val + ")</td><td>" + (item.cant || 0) + "</td><td>" +
-                    "<button class='btn-edit' onclick='cargarEdicion("+i+")'>📝</button>" +
-                    "<button class='btn-del' onclick='borrar("+i+")'>🗑️</button></td></tr>";
+        function actualizarTabla() {
+            var tabla = document.getElementById('cuerpo-tabla');
+            tabla.innerHTML = "";
+            stock.forEach(function(item, i) {
+                tabla.innerHTML += "<tr>" +
+                    "<td><span class='serie-badge'>" + item.serie + "</span></td>" +
+                    "<td>" + item.nombre + " (" + item.valor + ")</td>" +
+                    "<td><b>" + item.cantidad + "</b></td>" +
+                    "<td>" +
+                        "<button class='btn-edit' onclick='cargarEdit("+i+")'>📝</button>" +
+                        "<button class='btn-del' onclick='eliminar("+i+")'>🗑️</button>" +
+                    "</td></tr>";
             });
         }
 
-        function dibujarQR(item) {
-            var preview = document.getElementById('etiqueta-preview');
-            preview.style.display = 'block';
-            document.getElementById('p-comp').innerText = item.comp.toUpperCase();
-            document.getElementById('p-val').innerText = "VALOR: " + item.val + " | CANT: " + (item.cant || 0);
-            
-            var divQR = document.getElementById('qrcode');
-            divQR.innerHTML = ""; // Limpiar anterior
-            
-            // Intentar generar QR con un pequeño retraso para asegurar que el DOM esté listo
-            setTimeout(function() {
-                try {
-                    new QRCode(divQR, {
-                        text: "COMP: " + item.comp + "\nVAL: " + item.val + "\nCANT: " + item.cant + "\nINFO: " + item.desc,
-                        width: 140,
-                        height: 140
-                    });
-                } catch(e) {
-                    console.log("Error generando QR: ", e);
-                }
-            }, 100);
+        function mostrarEtiqueta(item) {
+            document.getElementById('print-area').style.display = 'block';
+            document.getElementById('serie-txt').innerText = item.serie;
+            document.getElementById('detalles-txt').innerText = item.nombre + " | " + item.valor;
         }
 
-        function cargarEdicion(i) {
-            var it = inventario[i];
-            document.getElementById('comp').value = it.comp;
-            document.getElementById('val').value = it.val;
-            document.getElementById('cant').value = it.cant;
-            document.getElementById('desc').value = it.desc;
-            document.getElementById('edit-idx').value = i;
-            document.getElementById('btn-main').innerText = "ACTUALIZAR DATOS";
-            document.getElementById('btn-main').style.background = "#f1c40f";
+        function cargarEdit(i) {
+            var item = stock[i];
+            document.getElementById('nombre').value = item.nombre;
+            document.getElementById('valor').value = item.valor;
+            document.getElementById('cantidad').value = item.cantidad;
+            document.getElementById('desc').value = item.desc;
+            document.getElementById('edit-id').value = i;
+            document.getElementById('titulo-form').innerText = "Editando Serie: " + item.serie;
             window.scrollTo(0,0);
         }
 
-        function borrar(i) {
-            if(confirm("¿Eliminar del inventario?")) {
-                inventario.splice(i, 1);
-                localStorage.setItem('datos_inventario_v5', JSON.stringify(inventario));
-                dibujarTabla();
+        function eliminar(i) {
+            if(confirm("¿Seguro que quieres borrar este componente?")) {
+                stock.splice(i, 1);
+                localStorage.setItem('inventario_smd_v6', JSON.stringify(stock));
+                actualizarTabla();
             }
         }
 
-        window.onload = dibujarTabla;
+        function limpiar() {
+            document.getElementById('nombre').value = "";
+            document.getElementById('valor').value = "";
+            document.getElementById('cantidad').value = "";
+            document.getElementById('desc').value = "";
+        }
     </script>
 </body>
 </html>
+            
