@@ -3,154 +3,183 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Inventario Pro - Evelyn</title>
+    <title>Inventario Pro SMD - Evelyn</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
     <style>
-        body { font-family: 'Segoe UI', sans-serif; background-color: #f0f4f8; padding: 20px; text-align: center; }
-        .contenedor { max-width: 900px; margin: auto; display: flex; flex-wrap: wrap; gap: 20px; justify-content: center; }
+        body { font-family: 'Segoe UI', sans-serif; background-color: #f4f7f6; padding: 10px; text-align: center; }
+        .caja { background: white; max-width: 500px; margin: auto; padding: 20px; border-radius: 15px; box-shadow: 0 4px 10px rgba(0,0,0,0.1); }
+        input, textarea { width: 90%; padding: 10px; margin: 8px 0; border: 1px solid #ddd; border-radius: 8px; }
+        .grid-dos { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; width: 95%; margin: auto; }
+        button { background: #27ae60; color: white; border: none; padding: 12px; width: 95%; border-radius: 8px; cursor: pointer; font-weight: bold; font-size: 16px; }
         
-        /* Formulario */
-        .caja { background: white; padding: 25px; border-radius: 15px; box-shadow: 0 4px 10px rgba(0,0,0,0.1); width: 350px; }
-        input, textarea { width: 90%; padding: 10px; margin: 10px 0; border: 1px solid #ddd; border-radius: 8px; }
-        button { background: #2ecc71; color: white; border: none; padding: 12px; width: 100%; border-radius: 8px; cursor: pointer; font-weight: bold; }
-        
-        /* Inventario */
-        .seccion-inventario { background: white; padding: 20px; border-radius: 15px; flex-grow: 1; min-width: 400px; box-shadow: 0 4px 10px rgba(0,0,0,0.1); }
-        table { width: 100%; border-collapse: collapse; margin-top: 15px; font-size: 14px; }
-        th, td { border-bottom: 1px solid #eee; padding: 10px; text-align: left; }
+        #etiqueta-resultado { display: none; margin: 20px auto; padding: 15px; border: 2px dashed #333; background: white; width: fit-content; }
+        #qrcode { margin: 10px auto; display: flex; justify-content: center; }
+
+        .contenedor-tabla { max-width: 95%; margin: 20px auto; background: white; padding: 15px; border-radius: 12px; overflow-x: auto; }
+        table { width: 100%; border-collapse: collapse; }
+        th, td { padding: 10px; border-bottom: 1px solid #eee; text-align: center; }
         th { background: #34495e; color: white; }
         
-        /* Etiqueta flotante */
-        #vista-previa { margin-top: 20px; padding: 15px; border: 2px dashed #333; background: white; display: none; }
-        .btn-edit { background: #f1c40f; color: #333; padding: 5px; font-size: 12px; margin-right: 5px; }
-        .btn-del { background: #e74c3c; color: white; padding: 5px; font-size: 12px; }
-        
-        @media print { .caja, .seccion-inventario, button { display: none; } #vista-previa { display: block; border: none; } }
+        .btn-edit { background: #f1c40f; color: black; padding: 5px 10px; border-radius: 4px; margin-right: 5px; border: none; cursor: pointer; }
+        .btn-del { background: #e74c3c; color: white; padding: 5px 10px; border-radius: 4px; border: none; cursor: pointer; }
+        .no-print { display: flex; gap: 10px; justify-content: center; margin-top: 10px; }
+
+        @media print {
+            body * { visibility: hidden; }
+            #etiqueta-resultado, #etiqueta-resultado * { visibility: visible; }
+            #etiqueta-resultado { position: absolute; left: 0; top: 0; border: none; }
+        }
     </style>
 </head>
 <body>
 
-    <h1>📦 Gestión de Inventario y QR</h1>
-
-    <div class="contenedor">
-        <div class="caja">
-            <h3>Nueva Etiqueta</h3>
-            <input type="hidden" id="edit-index" value="-1">
-            <input type="text" id="comp" placeholder="Nombre (Ej: Resistor SMD)">
-            <input type="text" id="val" placeholder="Valor (Ej: 10k)">
-            <input type="number" id="cant" placeholder="Cantidad">
-            <textarea id="desc" placeholder="Descripción corta..."></textarea>
-            <button onclick="guardarOActualizar()" id="btn-principal">CREAR Y GUARDAR</button>
-            
-            <div id="vista-previa">
-                <h4 id="p-comp"></h4>
-                <p id="p-val"></p>
-                <div id="qrcode" style="display:flex; justify-content:center;"></div>
-                <button onclick="window.print()" style="background:#3498db; margin-top:10px;">IMPRIMIR ETIQUETA</button>
+    <div class="caja">
+        <h2>📦 Mi Inventario SMD</h2>
+        <input type="hidden" id="indice-edicion" value="-1">
+        <label style="display:block; text-align:left; margin-left:5%;">Componente:</label>
+        <input type="text" id="comp" placeholder="Ej: Resistor SMD">
+        
+        <div class="grid-dos">
+            <div>
+                <label style="display:block; text-align:left;">Valor:</label>
+                <input type="text" id="val" placeholder="Ej: 4.7k">
+            </div>
+            <div>
+                <label style="display:block; text-align:left;">Cantidad:</label>
+                <input type="number" id="cant" placeholder="0">
             </div>
         </div>
+        
+        <label style="display:block; text-align:left; margin-left:5%;">Descripción:</label>
+        <textarea id="desc" rows="2"></textarea>
+        
+        <button onclick="guardarDato()" id="btn-accion">REGISTRAR Y GENERAR QR</button>
+    </div>
 
-        <div class="seccion-inventario">
-            <h3>Listado de Stock</h3>
-            <table>
-                <thead>
-                    <tr>
-                        <th>Comp.</th>
-                        <th>Valor</th>
-                        <th>Cant.</th>
-                        <th>Acciones</th>
-                    </tr>
-                </thead>
-                <tbody id="tabla-cuerpo"></tbody>
-            </table>
+    <div id="etiqueta-resultado">
+        <h3 id="txt-comp" style="margin:0;"></h3>
+        <p id="txt-val" style="margin:5px 0; font-weight:bold;"></p>
+        <p id="txt-cant" style="margin:5px 0;"></p>
+        <div id="qrcode"></div>
+        <div class="no-print">
+            <button style="background:#3498db; width:auto;" onclick="window.print()">IMPRIMIR</button>
+            <button style="background:#e67e22; width:auto;" onclick="bajarQR()">BAJAR QR</button>
         </div>
     </div>
 
-    <script>
-        let inventario = JSON.parse(localStorage.getItem('inv_evelyn') || '[]');
+    <div class="contenedor-tabla">
+        <h3>📋 Listado de Stock</h3>
+        <table>
+            <thead>
+                <tr>
+                    <th>Comp.</th>
+                    <th>Valor</th>
+                    <th>Cant.</th>
+                    <th>Acciones</th>
+                </tr>
+            </thead>
+            <tbody id="cuerpo-tabla"></tbody>
+        </table>
+    </div>
 
-        function guardarOActualizar() {
+    <script>
+        let datos = JSON.parse(localStorage.getItem('inv_smd') || '[]');
+
+        function guardarDato() {
             const comp = document.getElementById('comp').value;
             const val = document.getElementById('val').value;
             const cant = document.getElementById('cant').value;
             const desc = document.getElementById('desc').value;
-            const index = document.getElementById('edit-index').value;
+            const index = document.getElementById('indice-edicion').value;
 
-            if (!comp || !val) return alert("Llena los campos básicos");
+            if(!comp || !val) return alert("Llena los campos básicos");
 
-            const item = { comp, val, cant, desc };
+            const objeto = { comp, val, cant, desc };
 
-            if (index === "-1") {
-                inventario.push(item); // Nuevo
+            if(index === "-1") {
+                datos.push(objeto);
             } else {
-                inventario[index] = item; // Editar existente
-                document.getElementById('edit-index').value = "-1";
-                document.getElementById('btn-principal').innerText = "CREAR Y GUARDAR";
+                datos[index] = objeto;
+                document.getElementById('indice-edicion').value = "-1";
+                document.getElementById('btn-accion').innerText = "REGISTRAR Y GENERAR QR";
+                document.getElementById('btn-accion').style.background = "#27ae60";
             }
 
-            localStorage.setItem('inv_evelyn', JSON.stringify(inventario));
-            renderizarTabla();
-            generarQR(item);
-            limpiarCampos();
+            localStorage.setItem('inv_smd', JSON.stringify(datos));
+            actualizarTabla();
+            mostrarEtiqueta(objeto);
+            limpiarFormulario();
         }
 
-        function renderizarTabla() {
-            const cuerpo = document.getElementById('tabla-cuerpo');
-            cuerpo.innerHTML = "";
-            inventario.forEach((item, i) => {
-                cuerpo.innerHTML += `
+        function actualizarTabla() {
+            const tabla = document.getElementById('cuerpo-tabla');
+            tabla.innerHTML = "";
+            datos.forEach((item, i) => {
+                tabla.innerHTML += `
                     <tr>
                         <td>${item.comp}</td>
                         <td>${item.val}</td>
-                        <td>${item.cant || 0}</td>
+                        <td>${item.cant}</td>
                         <td>
-                            <button class="btn-edit" onclick="prepararEdicion(${i})">📝</button>
+                            <button class="btn-edit" onclick="editar(${i})">📝</button>
                             <button class="btn-del" onclick="eliminar(${i})">🗑️</button>
                         </td>
                     </tr>`;
             });
         }
 
-        function generarQR(item) {
-            document.getElementById('vista-previa').style.display = 'block';
-            document.getElementById('p-comp').innerText = item.comp.toUpperCase();
-            document.getElementById('p-val').innerText = "Valor: " + item.val + " | Cant: " + item.cant;
+        function mostrarEtiqueta(item) {
+            document.getElementById('etiqueta-resultado').style.display = 'block';
+            document.getElementById('txt-comp').innerText = item.comp.toUpperCase();
+            document.getElementById('txt-val').innerText = "VALOR: " + item.val;
+            document.getElementById('txt-cant').innerText = "CANTIDAD: " + item.cant;
             
             const qrDiv = document.getElementById('qrcode');
             qrDiv.innerHTML = "";
             new QRCode(qrDiv, {
-                text: `COMP: ${item.comp}\nVALOR: ${item.val}\nDESC: ${item.desc}`,
-                width: 128, height: 128
+                text: `COMP: ${item.comp}\nVAL: ${item.val}\nCANT: ${item.cant}\nINFO: ${item.desc}`,
+                width: 140, height: 140
             });
         }
 
-        function prepararEdicion(i) {
-            const item = inventario[i];
+        function editar(i) {
+            const item = datos[i];
             document.getElementById('comp').value = item.comp;
             document.getElementById('val').value = item.val;
             document.getElementById('cant').value = item.cant;
             document.getElementById('desc').value = item.desc;
-            document.getElementById('edit-index').value = i;
-            document.getElementById('btn-principal').innerText = "ACTUALIZAR ÍTEM";
-            document.getElementById('btn-principal').style.background = "#f1c40f";
+            document.getElementById('indice-edicion').value = i;
+            document.getElementById('btn-accion').innerText = "ACTUALIZAR ÍTEM";
+            document.getElementById('btn-accion').style.background = "#f1c40f";
+            window.scrollTo(0,0);
         }
 
         function eliminar(i) {
-            if (confirm("¿Eliminar este componente?")) {
-                inventario.splice(i, 1);
-                localStorage.setItem('inv_evelyn', JSON.stringify(inventario));
-                renderizarTabla();
+            if(confirm("¿Seguro que quieres borrar este ítem?")) {
+                datos.splice(i, 1);
+                localStorage.setItem('inv_smd', JSON.stringify(datos));
+                actualizarTabla();
             }
         }
 
-        function limpiarCampos() {
+        function bajarQR() {
+            const canvas = document.querySelector("#qrcode canvas");
+            if(canvas) {
+                const link = document.createElement('a');
+                link.download = `QR-${document.getElementById('txt-comp').innerText}.png`;
+                link.href = canvas.toDataURL();
+                link.click();
+            }
+        }
+
+        function limpiarFormulario() {
             document.getElementById('comp').value = "";
             document.getElementById('val').value = "";
             document.getElementById('cant').value = "";
             document.getElementById('desc').value = "";
         }
 
-        window.onload = renderizarTabla;
+        window.onload = actualizarTabla;
     </script>
 </body>
 </html>
