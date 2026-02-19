@@ -4,7 +4,6 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Inventario Permanente - Evelyn</title>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
     <style>
         body { font-family: sans-serif; background-color: #f0f4f8; padding: 15px; text-align: center; color: #333; }
         .contenedor { max-width: 800px; margin: auto; display: flex; flex-wrap: wrap; gap: 20px; justify-content: center; }
@@ -16,7 +15,7 @@
         th, td { border-bottom: 1px solid #eee; padding: 10px; text-align: center; }
         th { background: #34495e; color: white; }
         #etiqueta-preview { margin-top: 20px; padding: 15px; border: 2px dashed #333; background: white; display: none; }
-        #qrcode { margin: 10px auto; display: flex; justify-content: center; }
+        #qrcode { margin: 10px auto; display: flex; justify-content: center; min-height: 140px; }
         .btn-edit { background: #f1c40f; color: #000; border: none; padding: 6px; border-radius: 4px; cursor: pointer; margin-right: 4px; }
         .btn-del { background: #e74c3c; color: white; border: none; padding: 6px; border-radius: 4px; cursor: pointer; }
         @media print { .caja, .seccion-inventario, button { display: none; } #etiqueta-preview { display: block; border: none; position: absolute; top: 0; left: 0; } }
@@ -59,8 +58,11 @@
         </div>
     </div>
 
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+
     <script>
-        var inventario = JSON.parse(localStorage.getItem('datos_inventario_v4') || '[]');
+        // Usamos una versión nueva de la base de datos para asegurar limpieza
+        var inventario = JSON.parse(localStorage.getItem('datos_inventario_v5') || '[]');
 
         function guardarTodo() {
             var c = document.getElementById('comp').value;
@@ -82,9 +84,11 @@
                 document.getElementById('btn-main').style.background = "#2ecc71";
             }
 
-            localStorage.setItem('datos_inventario_v4', JSON.stringify(inventario));
+            localStorage.setItem('datos_inventario_v5', JSON.stringify(inventario));
             dibujarTabla();
             dibujarQR(nuevoItem);
+            
+            // Limpiar formulario
             document.getElementById('comp').value = "";
             document.getElementById('val').value = "";
             document.getElementById('cant').value = "";
@@ -102,17 +106,26 @@
         }
 
         function dibujarQR(item) {
-            document.getElementById('etiqueta-preview').style.display = 'block';
+            var preview = document.getElementById('etiqueta-preview');
+            preview.style.display = 'block';
             document.getElementById('p-comp').innerText = item.comp.toUpperCase();
             document.getElementById('p-val').innerText = "VALOR: " + item.val + " | CANT: " + (item.cant || 0);
             
             var divQR = document.getElementById('qrcode');
-            divQR.innerHTML = "";
-            new QRCode(divQR, {
-                text: "COMP: " + item.comp + "\nVAL: " + item.val + "\nCANT: " + item.cant + "\nINFO: " + item.desc,
-                width: 140,
-                height: 140
-            });
+            divQR.innerHTML = ""; // Limpiar anterior
+            
+            // Intentar generar QR con un pequeño retraso para asegurar que el DOM esté listo
+            setTimeout(function() {
+                try {
+                    new QRCode(divQR, {
+                        text: "COMP: " + item.comp + "\nVAL: " + item.val + "\nCANT: " + item.cant + "\nINFO: " + item.desc,
+                        width: 140,
+                        height: 140
+                    });
+                } catch(e) {
+                    console.log("Error generando QR: ", e);
+                }
+            }, 100);
         }
 
         function cargarEdicion(i) {
@@ -122,15 +135,15 @@
             document.getElementById('cant').value = it.cant;
             document.getElementById('desc').value = it.desc;
             document.getElementById('edit-idx').value = i;
-            document.getElementById('btn-main').innerText = "ACTUALIZAR CANTIDAD / DATOS";
+            document.getElementById('btn-main').innerText = "ACTUALIZAR DATOS";
             document.getElementById('btn-main').style.background = "#f1c40f";
             window.scrollTo(0,0);
         }
 
         function borrar(i) {
-            if(confirm("¿Eliminar este componente del inventario?")) {
+            if(confirm("¿Eliminar del inventario?")) {
                 inventario.splice(i, 1);
-                localStorage.setItem('datos_inventario_v4', JSON.stringify(inventario));
+                localStorage.setItem('datos_inventario_v5', JSON.stringify(inventario));
                 dibujarTabla();
             }
         }
@@ -139,5 +152,3 @@
     </script>
 </body>
 </html>
-
-            
